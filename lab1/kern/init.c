@@ -35,6 +35,11 @@ i386_init(void)
 
 	cprintf("6828 decimal is %o octal!\n", 6828);
 
+	// charlysl
+	// lab1 8.5
+        unsigned int i = 0x00646c72;
+        cprintf("H%x Wo%s", 57616, &i);
+
 	// Test the stack backtrace function (lab 1 only)
 	test_backtrace(5);
 

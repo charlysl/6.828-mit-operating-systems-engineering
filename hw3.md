@@ -1,3 +1,4 @@
+
 # Homework 3
 
 ## Memory layout of kern_pgdir
@@ -24,10 +25,10 @@ UPAGES --------> +------------------------------+ 0xef000000
 		 :                              :
 0 -------------> +------------------------------+ 0x00000000
 ```
-Instances where multiple regions of virtual memory point to the same physical meory:
-- the "User image of pages" and [pages, pages + 4MB]
+Instances where multiple regions of virtual memory point to the same physical memory:
+- the ```"User image of pages"``` and ```[pages, pages + 4MB)```
 
-The kernel want to make some of its structures visible to the user.
+The kernel wants to make some of its structures visible to the user.
 
 ## Memory layout of entry_pgdir
 ``` 
@@ -48,6 +49,7 @@ KERNBASE ------> +-----------------------------+ 0xf0000000
 0 -------------> +-----------------------------+ 0x00000000
 ``` 
 
-In the entry_pgdir layout the kernel is mapped to a smaller, overlapping region, so it's safe to switch to kern_pgdir layout, where the kernel is mapped to a larger region.
+In the ```entry_pgdir``` layout the kernel is mapped to a smallerregion, so it's safe to switch to ```kern_pgdir layout```, where the kernel is mapped to a larger, overlapping region.
 
 		
+

@@ -111,8 +111,8 @@ boot_alloc(uint32_t n)
 	nextfree = ROUNDUP(nextfree + n, PGSIZE);
 
 	// If we're out of memory, boot_alloc should panic.
-	assert(npages > 0);
-	cprintf("boot_alloc  n %d, result %p, nextfree %p, limit %p, npages %d\n", n, result, PADDR(nextfree), npages*PGSIZE, npages);
+	//assert(npages > 0);
+	//cprintf("boot_alloc  n %d, result %p, nextfree %p, limit %p, npages %d\n", n, result, PADDR(nextfree), npages*PGSIZE, npages);
 	if ((size_t)PADDR(nextfree) >= npages * PGSIZE) {
 		panic("boot_alloc out of memory");
 	}
@@ -176,24 +176,6 @@ mem_init(void)
 	check_page_free_list(1);
 	check_page_alloc();
 	
-/*
-	cprintf("mem_init  WARNING remove these tests later - charlysl\n");
-	// pgdir_walk tests
-	cprintf("mem_init nextfree %p\n", boot_alloc(0));
-	pde_t* pgdir = page2kva(page_alloc(ALLOC_ZERO));
-	cprintf("mem_init  pgdir %p, pgdir[1] %p\n", pgdir, pgdir[1]);
-	pte_t* pte = pgdir_walk(pgdir, PGADDR(1,2,0), 1);
-	cprintf("mem_init  pte %p, *pte %p\n", pte, *pte);
-	pte = pgdir_walk(pgdir, PGADDR(1,2,0), 1);
-	cprintf("mem_init  pte %p, *pte %p\n", pte, *pte);
-	pte = pgdir_walk(pgdir, PGADDR(1,1,0), 1);
-	cprintf("mem_init  pte %p, *pte %p\n", pte, *pte);
-	// boot_map_region tests
-	cprintf("boot_map_region\n");
-	boot_map_region(page2kva(page_alloc(ALLOC_ZERO)), 0xFFFF0000, 3*PGSIZE, 0xAAAA0000, 0);
-*/
-
-	
 
 	check_page();
 
@@ -208,6 +190,8 @@ mem_init(void)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
 
+	boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U | PTE_P);
+
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
 	// stack.  The kernel stack grows down from virtual address KSTACKTOP.
@@ -220,6 +204,8 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
 
+	boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
+
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
 	// Ie.  the VA range [KERNBASE, 2^32) should map to
@@ -228,6 +214,8 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
+
+	boot_map_region(kern_pgdir, KERNBASE, (2^32) - KERNBASE, 0, PTE_W | PTE_P);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -421,7 +409,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 	pde_t *pde = &pgdir[pdx];	// get page directory entry
 	int is_pde_present = *pde & PTE_P;	// is the pde present
 	
-	cprintf("pgdir_walk  pdx %d, *pde %p, is_pde_present %x\n", pdx, *pde, is_pde_present);	
+	//cprintf("pgdir_walk  pdx %d, *pde %p, is_pde_present %x\n", pdx, *pde, is_pde_present);	
 
 	if(!is_pde_present) {
 		if (!create) {
@@ -449,7 +437,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 			//    because it is referenced by the page directory
 			pte_page->pp_ref = 1;
 
-			cprintf("pgdir_walk created  *pde %p\n", *pde);
+			//cprintf("pgdir_walk created  *pde %p\n", *pde);
 		}
 	} 
 
@@ -457,24 +445,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 	pte_t* pt = (pte_t*) KADDR(PTE_ADDR(*pde)); // get the page table base
 	pte_t* pte = &pt[ptx]; // get page table entry
 	uint32_t pte_p = *pte & PTE_P; // is the page table entry present?
-	cprintf("pgdir_walk  pt %p, ptx %d, *pte %p, present %d\n", pt, ptx, *pte, pte_p);
-/* TODO does not create the memory page proper, only the page table 
-	if (!pte_p) {
-		if (!create) {
-			return NULL;
-		} else {
-			// regular memory page, no need to init to zeroes
-			struct Page* pte_page = page_alloc(0);
-
-			if (pte_page == NULL) {
-				return NULL;
-			}
-
-			*pte = 0 | PTE_ADDR(PADDR(page2kva(pte_page))) | PTE_P | PTE_W;
-			cprintf("pgdir_walk created  *pte %p\n", *pte);
-		}
-	}
-*/
+	//cprintf("pgdir_walk  pt %p, ptx %d, *pte %p, present %d\n", pt, ptx, *pte, pte_p);
 
 	return pte;
 }
@@ -531,7 +502,7 @@ page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm)
 	// Fill this function in
 
 	pte_t* pte = pgdir_walk(pgdir, va, 1);
-	cprintf("page_insert  pte %p\n", pte);
+	//cprintf("page_insert  pte %p\n", pte);
 	if (pte == NULL) return -E_NO_MEM;
 
 	// pp is re-inserted at the same virtual address in the same pgdir?
@@ -542,12 +513,12 @@ page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm)
 		}
 		pp->pp_ref++;
 	} else {
-		cprintf("Page reinserted\n");
+		//cprintf("Page reinserted\n");
 	}
 
 
 	*pte = 0 | PTE_ADDR(PADDR(page2kva(pp))) | perm | PTE_P;
-	cprintf("page_insert  perm %p, *pte %p\n", perm, *pte);
+	//cprintf("page_insert  perm %p, *pte %p\n", perm, *pte);
 
 	// pde should have same permissions as pte
 	pde_t pde = pgdir[PDX(va)] & ~0xFFF;
@@ -605,7 +576,7 @@ page_remove(pde_t *pgdir, void *va)
 
 	if (page == NULL) return;
 
-	cprintf("page_remove before  pgdir %p, va %p, *pte %p, pp_ref %d\n", pgdir, va, *pgdir_walk(pgdir, va, 0), page->pp_ref);
+	//cprintf("page_remove before  pgdir %p, va %p, *pte %p, pp_ref %d\n", pgdir, va, *pgdir_walk(pgdir, va, 0), page->pp_ref);
 
 	page_decref(page);
 
@@ -614,7 +585,7 @@ page_remove(pde_t *pgdir, void *va)
 		tlb_invalidate(pgdir, va);
 	}
 
-	cprintf("page_remove after  *pte %p, pp_ref %d\n", *pgdir_walk(pgdir, va, 0), page->pp_ref);
+	//cprintf("page_remove after  *pte %p, pp_ref %d\n", *pgdir_walk(pgdir, va, 0), page->pp_ref);
 	
 }
 

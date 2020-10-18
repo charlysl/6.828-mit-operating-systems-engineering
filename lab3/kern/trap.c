@@ -89,7 +89,7 @@ trap_init(void)
 	SETGATE(idt[0], 0, GD_KT, vector0, 0); 
 	SETGATE(idt[1], 0, GD_KT, vector1, 0); 
 	SETGATE(idt[2], 0, GD_KT, vector2, 0); 
-	SETGATE(idt[3], 0, GD_KT, vector3, 0); 
+	SETGATE(idt[3], 0, GD_KT, vector3, 3); 
 	SETGATE(idt[4], 0, GD_KT, vector4, 0); 
 	SETGATE(idt[5], 0, GD_KT, vector5, 0); 
 	SETGATE(idt[6], 0, GD_KT, vector6, 0); 
@@ -183,6 +183,11 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
 
+	if (tf->tf_trapno == T_PGFLT) {
+		page_fault_handler(tf);	
+		return;
+	}
+
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT)
@@ -245,6 +250,19 @@ page_fault_handler(struct Trapframe *tf)
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
+
+	switch(tf->tf_err) {
+		case 4:
+			cprintf("I read an unmapped virtual address from location %x!\n", fault_va);
+			break;
+		case 5:
+			cprintf("I read a protected virtual address from location %x!\n", fault_va);
+			break;
+		case 6:
+			break;
+		case 7:
+			break;
+	}
 
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",

@@ -65,6 +65,7 @@ TRAPHANDLER_NOEC("vector16", 16);
 TRAPHANDLER("vector17", 17);
 TRAPHANDLER_NOEC("vector18", 18);
 TRAPHANDLER("vector19", 19);
+TRAPHANDLER_NOEC("vector_SYSCALL", T_SYSCALL);
 
 
 /*
@@ -92,6 +93,5 @@ _alltraps:
 	
 	# Call trap(tf), where tf=%esp
 	pushl %esp
-	call trap
-	#addl $4, %esp
+	call trap	# never returns, back to user via env_run()
 

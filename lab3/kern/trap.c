@@ -44,6 +44,7 @@ void vector16();
 void vector17();
 void vector18();
 void vector19();
+void vector_SYSCALL();
 
 static const char *trapname(int trapno)
 {
@@ -89,7 +90,7 @@ trap_init(void)
 	SETGATE(idt[0], 0, GD_KT, vector0, 0); 
 	SETGATE(idt[1], 0, GD_KT, vector1, 0); 
 	SETGATE(idt[2], 0, GD_KT, vector2, 0); 
-	SETGATE(idt[3], 0, GD_KT, vector3, 3); 
+	SETGATE(idt[T_BRKPT], 0, GD_KT, vector3, 3); 
 	SETGATE(idt[4], 0, GD_KT, vector4, 0); 
 	SETGATE(idt[5], 0, GD_KT, vector5, 0); 
 	SETGATE(idt[6], 0, GD_KT, vector6, 0); 
@@ -104,6 +105,7 @@ trap_init(void)
 	SETGATE(idt[17], 0, GD_KT, vector17, 0); 
 	SETGATE(idt[18], 0, GD_KT, vector18, 0); 
 	SETGATE(idt[19], 0, GD_KT, vector19, 0); 
+	SETGATE(idt[T_SYSCALL], 0, GD_KT, vector_SYSCALL, 3); 
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -190,6 +192,16 @@ trap_dispatch(struct Trapframe *tf)
 		case T_PGFLT:
 			page_fault_handler(tf);	
 			break;
+		case T_SYSCALL:
+			tf->tf_regs.reg_eax = syscall(
+			 				tf->tf_regs.reg_eax, 
+							tf->tf_regs.reg_edx,
+							tf->tf_regs.reg_ecx,
+							tf->tf_regs.reg_ebx,
+							tf->tf_regs.reg_edi,
+							tf->tf_regs.reg_esi
+			);
+			return;
 		default:
 			// Unexpected trap: The user process or the kernel has a bug.
 			print_trapframe(tf);

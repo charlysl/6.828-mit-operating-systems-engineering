@@ -22,6 +22,11 @@ sys_cputs(const char *s, size_t len)
 
 	// LAB 3: Your code here.
 
+	if ((uintptr_t)(s+len) >= ULIM) {
+		cprintf("sys_cputs: calling env_destroy  s 0x%08p, len %d\n", s, len);
+		env_destroy(curenv);	
+	}
+
 	// Print the string supplied by the user.
 	cprintf("%.*s", len, s);
 }
@@ -70,6 +75,17 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// Return any appropriate return value.
 	// LAB 3: Your code here.
 
-	panic("syscall not implemented");
+	//panic("syscall not implemented");
+
+	switch(syscallno) {
+		case(SYS_cputs):
+			sys_cputs((char*)a1, (size_t)a2);
+			return 0;
+		case(SYS_cgetc):
+		case(SYS_getenvid):
+		case(SYS_env_destroy):
+		default:
+			return -E_INVAL;
+	}
 }
 

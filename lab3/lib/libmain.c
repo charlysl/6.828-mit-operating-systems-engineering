@@ -2,6 +2,7 @@
 // entry.S already took care of defining envs, pages, vpd, and vpt.
 
 #include <inc/lib.h>
+#include <inc/env.h>
 
 extern void umain(int argc, char **argv);
 
@@ -13,7 +14,12 @@ libmain(int argc, char **argv)
 {
 	// set thisenv to point at our Env structure in envs[].
 	// LAB 3: Your code here.
-	thisenv = 0;
+
+	envid_t envid = sys_getenvid();
+
+	thisenv = &envs[ENVX(envid)];
+
+	cprintf("libmain  thisenv %08p, thisenv->env_id %d, sys_getenvid 0x%08x, ENVX %d, envs 0x%08p, sizeof(Env) %d\n", thisenv, thisenv->env_id, envid, ENVX(envid), envs, sizeof(struct Env));
 
 	// save the name of the program so that panic() can use it
 	if (argc > 0)

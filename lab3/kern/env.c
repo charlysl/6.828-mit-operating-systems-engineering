@@ -129,7 +129,7 @@ env_init(void)
 
 	assert(&envs[0] == env_free_list);  // free list must start with 1st env
 
-	cprintf("env_init done  NENV %d, env[0] %p, env_free_list %p\n", NENV, &envs[0], env_free_list);
+	//cprintf("env_init done  NENV %d, env[0] %p, env_free_list %p\n", NENV, &envs[0], env_free_list);
 
 
 	// Per-CPU part of the initialization
@@ -208,8 +208,8 @@ env_setup_vm(struct Env *e)
 	// Given that I have to create the same mappings to already
 	// existing page tables, why not just point to those from the env?
 
-	e->env_pgdir[PDX(UPAGES)] = kern_pgdir[PDX(UPAGES)];
-	e->env_pgdir[PDX(UENVS)] = kern_pgdir[PDX(UENVS)];
+	e->env_pgdir[PDX(UPAGES)] = kern_pgdir[PDX(UPAGES)] | PTE_U;
+	e->env_pgdir[PDX(UENVS)]  = kern_pgdir[PDX(UENVS)]  | PTE_U;
 	e->env_pgdir[PDX(KSTACKTOP - KSTKSIZE)] = kern_pgdir[PDX(KSTACKTOP - KSTKSIZE)];
 
 	// kva will overflow to 0 right after the last page
@@ -311,10 +311,10 @@ region_alloc(struct Env *e, void *va, size_t len)
 	uintptr_t from = (uintptr_t)va&~0xFFF;    // round va down
 	uintptr_t to   = (uintptr_t)(va + len)|0xFFF;        // round (va + len) up
 
-	cprintf("region_alloc  va %p, len %d, from %p, to %p\n", va, len, from, to);
+	//cprintf("region_alloc  va %p, len %d, from %p, to %p\n", va, len, from, to);
 
 	for (uintptr_t pva = from; pva <= to; pva += PGSIZE) {
-		cprintf("region_alloc  pva %p\n", pva);
+		//cprintf("region_alloc  pva %p\n", pva);
 		struct Page* pp = page_alloc(0);  // do not initialize
 		if (pp == NULL) {
 			panic("page allocation failed");
@@ -390,13 +390,13 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	uint8_t* ph_start = binary + elf->e_phoff;
 	uint8_t* ph_end = ph_start + elf->e_phnum * elf->e_phentsize;
 
-	cprintf("load_icode  binary %p, size %p, ph_start %p, ph_end %p, phnum %d\n", binary, size, ph_start, ph_end, elf->e_phnum);
+	//cprintf("load_icode  binary %p, size %p, ph_start %p, ph_end %p, phnum %d\n", binary, size, ph_start, ph_end, elf->e_phnum);
 
 	for (uint8_t* p = ph_start; p < ph_end; p += elf->e_phentsize) {
 		struct Proghdr* ph = (struct Proghdr*) p;
 
 		if(ph->p_type != ELF_PROG_LOAD) {
-			cprintf("load_icode skipping  p_type %d\n", ph->p_type);
+			//cprintf("load_icode skipping  p_type %d\n", ph->p_type);
 			continue;
 		}
 
@@ -408,14 +408,14 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 
 		lcr3(PADDR(e->env_pgdir)); // to make copying easier
 
-		cprintf("load_icode memmove  dst %p, src %p, len %d\n", ph->p_va, binary + ph->p_offset, ph->p_filesz);
+		//cprintf("load_icode memmove  dst %p, src %p, len %d\n", ph->p_va, binary + ph->p_offset, ph->p_filesz);
 		memmove((void*)ph->p_va, binary + ph->p_offset, ph->p_filesz);
 
 		if (ph->p_filesz > ph->p_memsz) {
 			panic("ELF filesz > memsz");
 		}
 		if (ph->p_memsz != ph->p_filesz) {
-			cprintf("load_icode memset  dst %p, len %d\n", ph->p_va + ph->p_filesz, ph->p_memsz - ph->p_filesz); 
+			//cprintf("load_icode memset  dst %p, len %d\n", ph->p_va + ph->p_filesz, ph->p_memsz - ph->p_filesz); 
 			memset((void*)(ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
 		}
 	}
@@ -451,7 +451,7 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 
 	e->env_tf.tf_eip = elf->e_entry;
 
-	cprintf("load_icode done  eip %08p\n", elf->e_entry);
+	//cprintf("load_icode done  eip %08p\n", elf->e_entry);
 }
 
 //

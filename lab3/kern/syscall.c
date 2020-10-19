@@ -22,10 +22,7 @@ sys_cputs(const char *s, size_t len)
 
 	// LAB 3: Your code here.
 
-	if ((uintptr_t)(s+len) >= ULIM) {
-		cprintf("sys_cputs: calling env_destroy  s 0x%08p, len %d\n", s, len);
-		env_destroy(curenv);	
-	}
+	user_mem_assert(curenv, s, len, PTE_U); 
 
 	// Print the string supplied by the user.
 	cprintf("%.*s", len, s);

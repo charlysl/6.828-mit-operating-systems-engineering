@@ -20,3 +20,18 @@ But symbolic addresses in the ```kern/mpentry.S``` code (like ```gtdesc```) are 
 
 On the other hand, each link address in ```boot/boot.S``` is identical to its physical address, so there is no need to translate it.
 
+## Question 2
+
+*It seems that using the big kernel lock guarantees that only one CPU can run the kernel code at a time. Why do we still need separate kernel stacks for each CPU?* 
+
+The problem is that even when one of the CPUs might already be holding the lock, this wouldn't prevent an interrupt in other CPUs from cloberring the kernel stack.
+
+*Describe a scenario in which using a shared kernel stack will go wrong, even with the protection of the big kernel lock.*
+
+1. CPU 0 is interrupted, trap pushes registers to kernel stack, acquires kernel lock, and starts handling interrupt
+
+2. CPU 1 is interrupted, trap pushes registers to kernel stack (totally confusing CPU 0 interrupt handling code), spins on kernel lock
+
+3. CPU 0 panics, or behaves strangely, because the kernel stack was corrupted by CPU 1
+
+

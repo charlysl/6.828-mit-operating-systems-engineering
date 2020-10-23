@@ -215,7 +215,6 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
 
-<<<<<<< HEAD
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
 	// IRQ line or other reasons. We don't care.
@@ -236,7 +235,8 @@ trap_dispatch(struct Trapframe *tf)
 	else {
 		env_destroy(curenv);
 		return;
-=======
+	}
+
 	switch (tf->tf_trapno) {
 		case T_BRKPT:
 			monitor(tf);
@@ -263,7 +263,6 @@ trap_dispatch(struct Trapframe *tf)
 				env_destroy(curenv);
 				return;
 			}
->>>>>>> lab3
 	}
 }
 
@@ -343,7 +342,6 @@ page_fault_handler(struct Trapframe *tf)
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
 
-<<<<<<< HEAD
 	// Call the environment's page fault upcall, if one exists.  Set up a
 	// page fault stack frame on the user exception stack (below
 	// UXSTACKTOP), then branch to curenv->env_pgfault_upcall.
@@ -373,7 +371,7 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
-=======
+
 	switch(tf->tf_err) {
 		case 4:
 			cprintf("I read an unmapped virtual address from location %x!\n", fault_va);
@@ -386,7 +384,6 @@ page_fault_handler(struct Trapframe *tf)
 		case 7:
 			break;
 	}
->>>>>>> lab3
 
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",

@@ -230,12 +230,8 @@ mem_init(void)
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
 
-<<<<<<< HEAD
 	// Initialize the SMP-related parts of the memory map
 	mem_init_mp();
-=======
-	boot_map_region(kern_pgdir, KERNBASE, (2^32) - KERNBASE, 0, PTE_W | PTE_P);
->>>>>>> lab3
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();

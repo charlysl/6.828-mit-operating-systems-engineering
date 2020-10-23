@@ -219,7 +219,7 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
 
-	boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
+	//boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -229,6 +229,9 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
+
+	boot_map_region(kern_pgdir, KERNBASE, (2^32) - KERNBASE, 0, PTE_W | PTE_P);
+
 
 	// Initialize the SMP-related parts of the memory map
 	mem_init_mp();
@@ -287,6 +290,11 @@ mem_init_mp(void)
 	//
 	// LAB 4: Your code here:
 
+	for (int i = 0, top = KSTACKTOP; i < NCPU; i++, top -= (KSTKSIZE + KSTKGAP)) {
+		//cprintf("mem_init_mp()  from %p, sz %p, to %p\n",  top - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]));
+		boot_map_region(kern_pgdir, top - KSTKSIZE, KSTKSIZE, (PADDR(percpu_kstacks[i])), PTE_W);
+	}
+
 }
 
 // --------------------------------------------------------------
@@ -332,7 +340,9 @@ page_init(void)
 		physaddr_t pa = i*PGSIZE; // current free page physical address
 
 		//  1) Mark physical page 0 as in use.
-		if (i == 0) {
+		// Change your code to mark the physical page at MPENTRY_PADDR
+		// as in use
+		if (i == 0 || pa == MPENTRY_PADDR) {
 			// do not change page_free_list here, because
 			// page_free_list == 0, which is its value when
 			// this block is executed, marks the end of the list, 
@@ -885,8 +895,11 @@ check_kern_pgdir(void)
 		assert(check_va2pa(pgdir, UENVS + i) == PADDR(envs) + i);
 
 	// check phys mem
-	for (i = 0; i < npages * PGSIZE; i += PGSIZE)
+	for (i = 0; i < npages * PGSIZE; i += PGSIZE) {
+		//cprintf("check phys mem  i %d, va %p, check_va2pa %d\n", i, KERNBASE + i, check_va2pa(pgdir, KERNBASE + i));
+
 		assert(check_va2pa(pgdir, KERNBASE + i) == i);
+	}
 
 	// check IO mem (new in lab 4)
 	for (i = IOMEMBASE; i < -PGSIZE; i += PGSIZE)

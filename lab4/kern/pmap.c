@@ -368,6 +368,10 @@ page_init(void)
 			continue;
 		}
 
+		if (pa == MPENTRY_PADDR) {
+			continue;
+		}
+
 		// page at pa is free, add it to free list
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;

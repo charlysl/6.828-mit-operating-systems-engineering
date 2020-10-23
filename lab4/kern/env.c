@@ -632,9 +632,10 @@ env_run(struct Env *e)
 
 	env_pop_tf(&e->env_tf);
 	
+	unlock_kernel();
 
 	//panic("env_run not yet implemented");
 
-	cprintf("env_run done\n");
+	//cprintf("env_run done\n");
 }
 

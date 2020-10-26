@@ -616,6 +616,8 @@ env_run(struct Env *e)
 
 	// LAB 3: Your code here.
 
+	cprintf("env_run  cpu %d\n", cpunum());
+
 	if (curenv != NULL) {
 		if (curenv->env_status == ENV_RUNNING) {
 			curenv->env_status = ENV_RUNNABLE;
@@ -628,14 +630,14 @@ env_run(struct Env *e)
 
 	e->env_runs++;
 
+	unlock_kernel();
+
 	lcr3(PADDR(e->env_pgdir));
 
 	env_pop_tf(&e->env_tf);
 	
-	unlock_kernel();
-
 	//panic("env_run not yet implemented");
 
-	//cprintf("env_run done\n");
+	cprintf("env_run done\n");
 }
 

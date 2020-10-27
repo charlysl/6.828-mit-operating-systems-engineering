@@ -34,4 +34,10 @@ The problem is that even when one of the CPUs might already be holding the lock,
 
 3. CPU 0 panics, or behaves strangely, because the kernel stack was corrupted by CPU 1
 
+## Question 3
+
+*In your implementation of ```env_run()``` you should have called ```lcr3()```. Before and after the call to ```lcr3()```, your code makes references (at least it should) to the variable ```e```, the argument to ```env_run```. Upon loading the ```%cr3``` register, the addressing context used by the MMU is instantly changed. But a virtual address (namely ```e```) has meaning relative to a given address context--the address context specifies the physical address to which the virtual address maps. Why can the pointer ```e``` be dereferenced both before and after the addressing switch?*
+
+```e``` points to a virtual address that is above ```KERNBASE```. All virtual addresses above ```KERNBASE``` are mapped for all environment's page directories to map to the same, kernel, physical addresses, readable only when executing in the kernel. Hence, although the call to ```lcr3()``` has changed the page directory, ```e``` is still mapped to exactly the same physical address, and because we are still executing inside ```env_run()```, we are still inside the kernel, so the pointer to ```e``` can still be dereferenced both before and after the addressing switch.
+
 

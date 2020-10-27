@@ -92,7 +92,7 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
-	cprintf("trap_init entered  vector0 %p\n", vector0);
+	//cprintf("trap_init entered  vector0 %p\n", vector0);
 
 	SETGATE(idt[0], 0, GD_KT, vector0, 0); 
 	SETGATE(idt[1], 0, GD_KT, vector1, 0); 
@@ -145,13 +145,13 @@ trap_init_percpu(void)
 	//
 	// LAB 4: Your code here:
 
-	cprintf("trap_init_percpu  cpu %d\n", cpunum());
+	//cprintf("trap_init_percpu  cpu %d\n", cpunum());
 
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
 	//ts.ts_esp0 = KSTACKTOP; 
 	//ts.ts_ss0 = GD_KD;
-	thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - (cpunum() + 1) * (KSTKSIZE + KSTKGAP);
+	thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - cpunum() * (KSTKSIZE + KSTKGAP);
 	thiscpu->cpu_ts.ts_ss0 = GD_KD;
 
 
@@ -167,7 +167,7 @@ trap_init_percpu(void)
 	// Load the IDT
 	lidt(&idt_pd);
 
-	cprintf("trap_init_percpu  cpu %d, esp0 %p\n", cpunum(), thiscpu->cpu_ts.ts_esp0);
+	//cprintf("trap_init_percpu  cpu %d, esp0 %p\n", cpunum(), thiscpu->cpu_ts.ts_esp0);
 }
 
 void
@@ -219,6 +219,7 @@ print_regs(struct PushRegs *regs)
 static void
 trap_dispatch(struct Trapframe *tf)
 {
+	//cprintf("trap_dispatch\n");
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
 
@@ -235,15 +236,6 @@ trap_dispatch(struct Trapframe *tf)
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
 
-	// Unexpected trap: The user process or the kernel has a bug.
-	print_trapframe(tf);
-	if (tf->tf_cs == GD_KT)
-		panic("unhandled trap in kernel");
-	else {
-		env_destroy(curenv);
-		return;
-	}
-
 	switch (tf->tf_trapno) {
 		case T_BRKPT:
 			monitor(tf);
@@ -252,6 +244,7 @@ trap_dispatch(struct Trapframe *tf)
 			page_fault_handler(tf);	
 			break;
 		case T_SYSCALL:
+			//cprintf("trap_dispatch syscall %d\n", tf->tf_regs.reg_eax);
 			tf->tf_regs.reg_eax = syscall(
 			 				tf->tf_regs.reg_eax, 
 							tf->tf_regs.reg_edx,
@@ -271,6 +264,17 @@ trap_dispatch(struct Trapframe *tf)
 				return;
 			}
 	}
+
+	// Unexpected trap: The user process or the kernel has a bug.
+	print_trapframe(tf);
+	if (tf->tf_cs == GD_KT)
+		panic("unhandled trap in kernel");
+	else {
+		cprintf("trap_dispatch env_destroy\n");
+		env_destroy(curenv);
+		return;
+	}
+
 }
 
 void
@@ -334,6 +338,7 @@ trap(struct Trapframe *tf)
 void
 page_fault_handler(struct Trapframe *tf)
 {
+	cprintf("page_fault_handler tf_eip %p, tf_esp %p\n", tf->tf_eip, tf->tf_esp);
 	uint32_t fault_va;
 
 	// Read processor's CR2 register to find the faulting address

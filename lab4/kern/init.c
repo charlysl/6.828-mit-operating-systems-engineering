@@ -66,7 +66,10 @@ i386_init(void)
 	ENV_CREATE(TEST, ENV_TYPE_USER);
 #else
 	// Touch all you want.
-	ENV_CREATE(user_primes, ENV_TYPE_USER);
+	//ENV_CREATE(user_primes, ENV_TYPE_USER);
+	for (i = 0; i < 30; i++) {
+		ENV_CREATE(user_yield, ENV_TYPE_USER);
+	}
 #endif // TEST*
 
 	// Schedule and run the first user environment!
@@ -97,6 +100,7 @@ boot_aps(void)
 
 		// Tell mpentry.S what stack to use 
 		mpentry_kstack = percpu_kstacks[c - cpus] + KSTKSIZE;
+		cprintf("boot_aps  mpentry_kstack %p\n", mpentry_kstack);
 		// Start the CPU at mpentry_start
 		lapic_startap(c->cpu_id, PADDR(code));
 		// Wait for the CPU to finish some basic setup in mp_main()
@@ -109,6 +113,7 @@ boot_aps(void)
 void
 mp_main(void)
 {
+	cprintf("mp_main  esp %p\n", read_esp());
 	// We are in high EIP now, safe to switch to kern_pgdir 
 	lcr3(PADDR(kern_pgdir));
 	cprintf("SMP: CPU %d starting\n", cpunum());
@@ -124,7 +129,9 @@ mp_main(void)
 	//
 	// Your code here:
 
+	cprintf("mp_main  cpu %d, esp %p\n", cpunum(), read_esp());
 	lock_kernel();
+	cprintf("mp_main  locked kernel cpu %d\n", cpunum());
 	sched_yield();
 
 	// Remove this after you finish Exercise 4

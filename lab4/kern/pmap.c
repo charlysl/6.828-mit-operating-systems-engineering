@@ -290,8 +290,9 @@ mem_init_mp(void)
 	//
 	// LAB 4: Your code here:
 
-	for (int i = 0, top = KSTACKTOP; i < NCPU; i++, top -= (KSTKSIZE + KSTKGAP)) {
-		//cprintf("mem_init_mp()  from %p, sz %p, to %p\n",  top - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]));
+	int i, top;
+	for (i = 0, top = KSTACKTOP; i < NCPU; i++, top -= (KSTKSIZE + KSTKGAP)) {
+		cprintf("mem_init_mp()  from %p, sz %p, to %p\n",  top - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]));
 		boot_map_region(kern_pgdir, top - KSTKSIZE, KSTKSIZE, (PADDR(percpu_kstacks[i])), PTE_W);
 	}
 
@@ -534,7 +535,8 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	// Fill this function in
 
 
-	for (int i = 0; i < size/PGSIZE; i++) {
+	int i; 
+	for (i = 0; i < size/PGSIZE; i++) {
 		pte_t* pte = pgdir_walk(pgdir, (void*)(va + i*PGSIZE), 1);
 		*pte = 0 | (pa + i*PGSIZE) | perm | PTE_P;	
 	}
@@ -696,7 +698,8 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 		return -E_FAULT;
 	}
 
-	for (uintptr_t i = (uintptr_t) va; i < (uintptr_t) va + len; i += PGSIZE) {
+	uintptr_t i;
+	for (i = (uintptr_t) va; i < (uintptr_t) va + len; i += PGSIZE) {
 		pte_t* pte = pgdir_walk(env->env_pgdir, (void*) i, 0);
 		if (pte == NULL || (perm & *pte) != perm) {
 			user_mem_check_addr = i;

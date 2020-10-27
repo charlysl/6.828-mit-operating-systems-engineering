@@ -120,7 +120,8 @@ env_init(void)
 	// Set up envs array
 	// LAB 3: Your code here.
 
-	for (int i = NENV - 1; i >= 0; i--) {
+	int i;
+	for (i = NENV - 1; i >= 0; i--) {
 		struct Env* env = &envs[i];
 
 		env->env_link = env_free_list;	//insert in free list
@@ -216,7 +217,8 @@ env_setup_vm(struct Env *e)
 	e->env_pgdir[PDX(KSTACKTOP - KSTKSIZE)] = kern_pgdir[PDX(KSTACKTOP - KSTKSIZE)];
 
 	// kva will overflow to 0 right after the last page
-	for (uintptr_t kva = KERNBASE; kva != 0; kva += PTSIZE) {
+	uintptr_t kva;
+	for (kva = KERNBASE; kva != 0; kva += PTSIZE) {
 		uint16_t pdx = PDX(kva);
 		//cprintf("env_setup_vm  kva %p, pdx %d\n", kva, pdx);
 		e->env_pgdir[pdx] = kern_pgdir[pdx];
@@ -325,7 +327,8 @@ region_alloc(struct Env *e, void *va, size_t len)
 
 	//cprintf("region_alloc  va %p, len %d, from %p, to %p\n", va, len, from, to);
 
-	for (uintptr_t pva = from; pva <= to; pva += PGSIZE) {
+	uintptr_t pva;
+	for (pva = from; pva <= to; pva += PGSIZE) {
 		//cprintf("region_alloc  pva %p\n", pva);
 		struct Page* pp = page_alloc(0);  // do not initialize
 		if (pp == NULL) {
@@ -404,7 +407,8 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 
 	//cprintf("load_icode  binary %p, size %p, ph_start %p, ph_end %p, phnum %d\n", binary, size, ph_start, ph_end, elf->e_phnum);
 
-	for (uint8_t* p = ph_start; p < ph_end; p += elf->e_phentsize) {
+	uint8_t* p;
+	for (p = ph_start; p < ph_end; p += elf->e_phentsize) {
 		struct Proghdr* ph = (struct Proghdr*) p;
 
 		if(ph->p_type != ELF_PROG_LOAD) {
@@ -616,7 +620,7 @@ env_run(struct Env *e)
 
 	// LAB 3: Your code here.
 
-	cprintf("env_run  cpu %d\n", cpunum());
+	//cprintf("env_run  id %d, eip %08p, cpu %d\n", ENVX(e->env_id), e->env_tf.tf_eip, cpunum());
 
 	if (curenv != NULL) {
 		if (curenv->env_status == ENV_RUNNING) {
@@ -638,6 +642,6 @@ env_run(struct Env *e)
 	
 	//panic("env_run not yet implemented");
 
-	cprintf("env_run done\n");
+	//cprintf("env_run done\n");
 }
 

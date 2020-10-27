@@ -30,6 +30,33 @@ sched_yield(void)
 
 	// LAB 4: Your code here.
 
+	int last_id = 0;
+	if (curenv != NULL) {
+		last_id = ENVX(curenv->env_id);
+	}
+
+	int id;
+	struct Env* e = NULL;
+	for (id = (last_id + 1) % NENV; id != last_id; id = (id + 1) % NENV) {
+		e = &envs[id];
+		if (e->env_type != ENV_TYPE_IDLE && e->env_status == ENV_RUNNABLE) {
+			break;
+		} else {
+			e = NULL;
+		}
+	}
+
+	if (id == last_id && envs[last_id].env_status == ENV_RUNNABLE) {
+		e = curenv;
+	}
+
+	if (e != NULL) {
+		cprintf("sched_yield run  id %d, last_id %d, cpu %d\n", 
+				id, last_id, cpunum());
+		env_run(e);
+		panic("returned to sched_yield");
+	}
+
 	// For debugging and testing purposes, if there are no
 	// runnable environments other than the idle environments,
 	// drop into the kernel monitor.

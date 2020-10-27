@@ -48,25 +48,25 @@
  * Lab 3: Your code here for generating entry points for the different traps.
  */
 
-TRAPHANDLER_NOEC("vector0", 0);
-TRAPHANDLER_NOEC("vector1", 1);
-TRAPHANDLER_NOEC("vector2", 2);
-TRAPHANDLER_NOEC("vector3", 3);
-TRAPHANDLER_NOEC("vector4", 4);
-TRAPHANDLER_NOEC("vector5", 5);
-TRAPHANDLER_NOEC("vector6", 6);
-TRAPHANDLER_NOEC("vector7", 7);
-TRAPHANDLER("vector8", 8);
-TRAPHANDLER("vector10", 10);
-TRAPHANDLER("vector11", 11);
-TRAPHANDLER("vector12", 12);
-TRAPHANDLER("vector13", 13);
-TRAPHANDLER("vector14", 14);
-TRAPHANDLER_NOEC("vector16", 16);
-TRAPHANDLER("vector17", 17);
-TRAPHANDLER_NOEC("vector18", 18);
-TRAPHANDLER("vector19", 19);
-TRAPHANDLER_NOEC("vector_SYSCALL", T_SYSCALL);
+TRAPHANDLER_NOEC(vector0, 0);
+TRAPHANDLER_NOEC(vector1, 1);
+TRAPHANDLER_NOEC(vector2, 2);
+TRAPHANDLER_NOEC(vector3, 3);
+TRAPHANDLER_NOEC(vector4, 4);
+TRAPHANDLER_NOEC(vector5, 5);
+TRAPHANDLER_NOEC(vector6, 6);
+TRAPHANDLER_NOEC(vector7, 7);
+TRAPHANDLER(vector8, 8);
+TRAPHANDLER(vector10, 10);
+TRAPHANDLER(vector11, 11);
+TRAPHANDLER(vector12, 12);
+TRAPHANDLER(vector13, 13);
+TRAPHANDLER(vector14, 14);
+TRAPHANDLER_NOEC(vector16, 16);
+TRAPHANDLER(vector17, 17);
+TRAPHANDLER_NOEC(vector18, 18);
+TRAPHANDLER(vector19, 19);
+TRAPHANDLER_NOEC(vector_SYSCALL, T_SYSCALL);
 
 
 /*

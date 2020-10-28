@@ -253,6 +253,7 @@ trap_dispatch(struct Trapframe *tf)
 							tf->tf_regs.reg_edi,
 							tf->tf_regs.reg_esi
 			);
+			//cprintf("trap_dispatch syscall ret\n");
 			return;
 		default:
 			// Unexpected trap: The user process or the kernel has a bug.
@@ -270,7 +271,7 @@ trap_dispatch(struct Trapframe *tf)
 	if (tf->tf_cs == GD_KT)
 		panic("unhandled trap in kernel");
 	else {
-		cprintf("trap_dispatch env_destroy\n");
+		//cprintf("trap_dispatch env_destroy\n");
 		env_destroy(curenv);
 		return;
 	}
@@ -324,6 +325,7 @@ trap(struct Trapframe *tf)
 
 	// Dispatch based on what type of trap occurred
 	trap_dispatch(tf);
+	//cprintf("trap trap_dispatch returned\n");
 
 	// If we made it to this point, then no other environment was
 	// scheduled, so we should return to the current environment
@@ -338,7 +340,7 @@ trap(struct Trapframe *tf)
 void
 page_fault_handler(struct Trapframe *tf)
 {
-	cprintf("page_fault_handler tf_eip %p, tf_esp %p\n", tf->tf_eip, tf->tf_esp);
+	//cprintf("page_fault_handler tf_eip %p, tf_esp %p\n", tf->tf_eip, tf->tf_esp);
 	uint32_t fault_va;
 
 	// Read processor's CR2 register to find the faulting address

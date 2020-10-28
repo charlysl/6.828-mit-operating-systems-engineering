@@ -598,6 +598,8 @@ env_pop_tf(struct Trapframe *tf)
 //
 // This function does not return.
 //
+int
+a = 0;
 void
 env_run(struct Env *e)
 {
@@ -620,7 +622,9 @@ env_run(struct Env *e)
 
 	// LAB 3: Your code here.
 
-	//cprintf("env_run  id %d, eip %08p, cpu %d\n", ENVX(e->env_id), e->env_tf.tf_eip, cpunum());
+	//cprintf("env_run  a %d, id %d, eip %08p, cpu %d\n", a++, ENVX(e->env_id), e->env_tf.tf_eip, cpunum());
+	//if (a++ == 2)
+	//	panic("env_run dbg");
 
 	if (curenv != NULL) {
 		if (curenv->env_status == ENV_RUNNING) {

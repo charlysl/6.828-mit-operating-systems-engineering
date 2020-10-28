@@ -51,8 +51,8 @@ sched_yield(void)
 	}
 
 	if (e != NULL) {
-		cprintf("sched_yield run  id %d, last_id %d, cpu %d\n", 
-				id, last_id, cpunum());
+		//cprintf("sched_yield run  id %d, last_id %d, cpu %d\n", 
+	        //			id, last_id, cpunum());
 		env_run(e);
 		panic("returned to sched_yield");
 	}

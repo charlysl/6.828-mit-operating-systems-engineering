@@ -388,17 +388,67 @@ page_fault_handler(struct Trapframe *tf)
 
 	// LAB 4: Your code here.
 
-	switch(tf->tf_err) {
-		case 4:
-			cprintf("I read an unmapped virtual address from location %x!\n", fault_va);
-			break;
-		case 5:
-			cprintf("I read a protected virtual address from location %x!\n", fault_va);
-			break;
-		case 6:
-			break;
-		case 7:
-			break;
+	if (curenv->env_pgfault_upcall == NULL) {
+		switch(tf->tf_err) {
+			case 4:
+				cprintf("I read an unmapped virtual address from location %x!\n",
+					 fault_va);
+				break;
+			case 5:
+				cprintf("I read a protected virtual address from location %x!\n",
+					 fault_va);
+				break;
+			case 6:
+				break;
+			case 7:
+				break;
+		}
+	} else {
+		cprintf("page_fault_handler stack check  curenv %d, from %p\n", 
+				curenv->env_id, (UXSTACKTOP - PGSIZE));
+
+		user_mem_assert(curenv, (void*) (UXSTACKTOP - PGSIZE), PGSIZE, PTE_W);
+
+		// To test whether tf->tf_esp is already on the user exception stack, 
+		// check whether it is in the range between UXSTACKTOP-PGSIZE and UXSTACKTOP-1, 
+		// inclusive. 	
+
+		struct UTrapframe* utf;
+
+		if (tf->tf_esp >= (UXSTACKTOP - PGSIZE) && tf->tf_esp < UXSTACKTOP) {
+			// allocate exception stack frame
+			utf = (struct UTrapframe*)((char*) tf->tf_esp 
+							- 4 - sizeof(struct UTrapframe));
+
+			cprintf("page_fault_handler recursive  tf_esp %p, utf %p, sz %d\n", 
+				tf->tf_esp, utf, sizeof(struct UTrapframe) + sizeof(int));
+
+			// check if there is exception stack overflow
+			user_mem_assert(curenv, (void*) utf, 1, PTE_W);
+		} else {
+			// allocate exception stack frame
+			utf = (struct UTrapframe*) (UXSTACKTOP - sizeof(struct UTrapframe));
+		}
+
+		// write exception stack frame
+		
+		/* information about the fault */
+		/* va for T_PGFLT, 0 otherwise */
+        	utf->utf_fault_va = tf->tf_trapno == T_PGFLT ? fault_va : 0;  
+        	utf->utf_err = tf->tf_err;
+        	/* trap-time return state */
+        	utf->utf_regs = tf->tf_regs;
+        	utf->utf_eip = tf->tf_eip;
+        	utf->utf_eflags = tf->tf_eflags;
+        	/* the trap-time stack to return to */
+        	utf->utf_esp = tf->tf_esp;
+
+		cprintf("page_fault_handler switching\n");
+        	tf->tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
+		tf->tf_esp = (uintptr_t) utf;
+		env_run(curenv);
+
+		return;
 	}
 
 	// Destroy the environment that caused the fault.

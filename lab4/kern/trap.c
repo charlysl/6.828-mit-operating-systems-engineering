@@ -281,6 +281,9 @@ trap_dispatch(struct Trapframe *tf)
 void
 trap(struct Trapframe *tf)
 {
+	//cprintf("trap frame:\n");
+	//print_trapframe(tf);
+
 	// The environment may have set DF and some versions
 	// of GCC rely on DF being clear
 	asm volatile("cld" ::: "cc");
@@ -337,6 +340,8 @@ trap(struct Trapframe *tf)
 }
 
 
+void _pgfault_upcall(void);
+
 void
 page_fault_handler(struct Trapframe *tf)
 {
@@ -389,6 +394,7 @@ page_fault_handler(struct Trapframe *tf)
 	// LAB 4: Your code here.
 
 	if (curenv->env_pgfault_upcall == NULL) {
+
 		switch(tf->tf_err) {
 			case 4:
 				cprintf("I read an unmapped virtual address from location %x!\n",
@@ -403,52 +409,75 @@ page_fault_handler(struct Trapframe *tf)
 			case 7:
 				break;
 		}
+
 	} else {
 		cprintf("page_fault_handler stack check  curenv %d, from %p\n", 
 				curenv->env_id, (UXSTACKTOP - PGSIZE));
 
 		user_mem_assert(curenv, (void*) (UXSTACKTOP - PGSIZE), PGSIZE, PTE_W);
 
-		// To test whether tf->tf_esp is already on the user exception stack, 
-		// check whether it is in the range between UXSTACKTOP-PGSIZE and UXSTACKTOP-1, 
-		// inclusive. 	
-
 		struct UTrapframe* utf;
 
-		if (tf->tf_esp >= (UXSTACKTOP - PGSIZE) && tf->tf_esp < UXSTACKTOP) {
-			// allocate exception stack frame
-			utf = (struct UTrapframe*)((char*) tf->tf_esp 
-							- 4 - sizeof(struct UTrapframe));
+		// To test whether tf->tf_esp is already on the user exception 
+		// stack, check whether it is in the range between 
+		// UXSTACKTOP-PGSIZE and UXSTACKTOP-1, inclusive. 	
 
-			cprintf("page_fault_handler recursive  tf_esp %p, utf %p, sz %d\n", 
-				tf->tf_esp, utf, sizeof(struct UTrapframe) + sizeof(int));
+		if (tf->tf_esp >= (UXSTACKTOP - PGSIZE) && 
+		    tf->tf_esp < UXSTACKTOP) {
 
-			// check if there is exception stack overflow
+			// There was a recursive fault.
+			// This means that the trap frame esp points to 
+			// the user-exception-stack.
+
+			// allocate user trap frame; remember extra word
+			utf = (struct UTrapframe*)((char*) 
+				tf->tf_esp - 4 - sizeof(struct UTrapframe));
+
+			cprintf("page_fault_handler tf_esp %p, utf %p, sz %d\n",
+				tf->tf_esp, utf, 
+				sizeof(struct UTrapframe) + sizeof(int));
+
+			// check if there is user-exception-stack overflow
 			user_mem_assert(curenv, (void*) utf, 1, PTE_W);
+
 		} else {
-			// allocate exception stack frame
-			utf = (struct UTrapframe*) (UXSTACKTOP - sizeof(struct UTrapframe));
+			// Page fault happend when executing with 
+			// regular user stack (normal user execution).
+
+			// Allocate user trap frame at the top of the
+			// user-exception-stack; there is no need to check
+			// if this stack overflows, still plenty of room
+			utf = (struct UTrapframe*) 
+				(UXSTACKTOP - sizeof(struct UTrapframe));
 		}
 
-		// write exception stack frame
+		// Write user-exception-stack frame.
+		// The information in this frame will be used when a
+		// user page fault handler has completed and switches back
+		// the the user instruction that caused the page fault.
+		// This switch happens in user mode, not from the kernel.
 		
-		/* information about the fault */
-		/* va for T_PGFLT, 0 otherwise */
         	utf->utf_fault_va = tf->tf_trapno == T_PGFLT ? fault_va : 0;  
-        	utf->utf_err = tf->tf_err;
-        	/* trap-time return state */
-        	utf->utf_regs = tf->tf_regs;
-        	utf->utf_eip = tf->tf_eip;
-        	utf->utf_eflags = tf->tf_eflags;
-        	/* the trap-time stack to return to */
-        	utf->utf_esp = tf->tf_esp;
+        	utf->utf_err      = tf->tf_err;
+        	utf->utf_regs     = tf->tf_regs;
+        	utf->utf_eip      = tf->tf_eip;
+        	utf->utf_eflags   = tf->tf_eflags;
+        	utf->utf_esp      = tf->tf_esp;
 
-		cprintf("page_fault_handler switching\n");
+		// Modify the trap frame so that, when returning to
+		// user mode, execution will continue at the user page fault
+		// handler, with the user-exception-stack.
+		//
+		// After this happens, the information that the trap mechanism
+		// saved in the trap frame, which is needed to return to
+		// the user instruction that caused the page fault, will
+		// have been popped from the kernel stack. This is the 
+		// reason why it had to be saved in the user-exception-stack,
+		// in the user trap frame.
+
         	tf->tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
-		tf->tf_esp = (uintptr_t) utf;
-		env_run(curenv);
-
-		return;
+		tf->tf_esp = (uintptr_t) utf; 
+		env_run(curenv);   // doesn't return
 	}
 
 	// Destroy the environment that caused the fault.

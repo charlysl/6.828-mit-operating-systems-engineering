@@ -70,13 +70,29 @@ _pgfault_upcall:
 	// can no longer modify any general-purpose registers.
 	// LAB 4: Your code here.
 
+	addl $8, %esp		// skip fault_va, tf_err
+
+	movl 0x20(%esp), %eax	// copy saved eip to register
+	movl 0x28(%esp), %ebx	// copy saved esp to register
+	addl $4, %ebx		// allocate space for eip in trap-time stack
+	movl %eax, (%ebx)	// copy trap-time eip to trap-time stack
+
+	popal			// can't modify general-purpose regs after this
+	movl $4, %esp		// skip eip
+
 	// Restore eflags from the stack.  After you do this, you can
 	// no longer use arithmetic operations or anything else that
 	// modifies eflags.
 	// LAB 4: Your code here.
 
+	popf
+
 	// Switch back to the adjusted trap-time stack.
 	// LAB 4: Your code here.
+	
+	popl %esp
 
 	// Return to re-execute the instruction that faulted.
 	// LAB 4: Your code here.
+
+	ret

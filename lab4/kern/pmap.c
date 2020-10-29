@@ -590,8 +590,8 @@ page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm)
 	*pte = 0 | PTE_ADDR(PADDR(page2kva(pp))) | perm | PTE_P;
 	//cprintf("page_insert  perm %p, *pte %p\n", perm, *pte);
 
-	// pde should have same permissions as pte
-	pde_t pde = pgdir[PDX(va)] & ~0xFFF;
+	// pde should be at least as permisive as pte
+	pde_t pde = pgdir[PDX(va)];
 	pgdir[PDX(va)] = pde | (*pte & 0xFFF);
 
 	return 0;

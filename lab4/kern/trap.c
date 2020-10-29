@@ -411,8 +411,8 @@ page_fault_handler(struct Trapframe *tf)
 		}
 
 	} else {
-		cprintf("page_fault_handler stack check  curenv %d, from %p\n", 
-				curenv->env_id, (UXSTACKTOP - PGSIZE));
+		//cprintf("page_fault_handler stack check  curenv %d, from %p\n", 
+		//		curenv->env_id, (UXSTACKTOP - PGSIZE));
 
 		user_mem_assert(curenv, (void*) (UXSTACKTOP - PGSIZE), PGSIZE, PTE_W);
 
@@ -433,9 +433,9 @@ page_fault_handler(struct Trapframe *tf)
 			utf = (struct UTrapframe*)((char*) 
 				tf->tf_esp - 4 - sizeof(struct UTrapframe));
 
-			cprintf("page_fault_handler tf_esp %p, utf %p, sz %d\n",
-				tf->tf_esp, utf, 
-				sizeof(struct UTrapframe) + sizeof(int));
+			//cprintf("page_fault_handler tf_esp %p, utf %p, sz %d\n",
+			//	tf->tf_esp, utf, 
+			//	sizeof(struct UTrapframe) + sizeof(int));
 
 			// check if there is user-exception-stack overflow
 			user_mem_assert(curenv, (void*) utf, 1, PTE_W);

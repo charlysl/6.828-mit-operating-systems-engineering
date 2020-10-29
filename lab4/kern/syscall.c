@@ -202,7 +202,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	// LAB 4: Your code here.
 	//panic("sys_page_alloc not implemented");
 
-	cprintf("sys_page_alloc  envid 0x%x, va %p, perm %d\n", envid, va, perm);
+	//cprintf("sys_page_alloc  envid 0x%x, va %p, perm %d\n", envid, va, perm);
 
 
 	struct Env* e;

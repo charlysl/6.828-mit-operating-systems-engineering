@@ -74,11 +74,12 @@ _pgfault_upcall:
 
 	movl 0x20(%esp), %eax	// copy saved eip to register
 	movl 0x28(%esp), %ebx	// copy saved esp to register
-	addl $4, %ebx		// allocate space for eip in trap-time stack
+	subl $4, %ebx		// allocate space for eip in trap-time stack
 	movl %eax, (%ebx)	// copy trap-time eip to trap-time stack
+	movl %ebx, 0x28(%esp)	// modify trap-time esp so that it points at the ret eip
 
 	popal			// can't modify general-purpose regs after this
-	movl $4, %esp		// skip eip
+	addl $4, %esp		// skip eip
 
 	// Restore eflags from the stack.  After you do this, you can
 	// no longer use arithmetic operations or anything else that

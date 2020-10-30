@@ -79,7 +79,42 @@ envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
-	panic("fork not implemented");
+	//panic("fork not implemented");
+
+	set_pgfault_handler(pgfault);
+
+	envid_t envid;
+ 	if ((envid = sys_exofork()) < 0) {
+		panic("fork");
+	} else if (envid == 0) {
+		// in the child
+
+		thisenv = &envs[ENVX(sys_getenvid())];
+		
+		return 0;
+	}
+
+	// in the parent
+
+	// copy address space to the child.
+
+	// For each writable or copy-on-write page in its address space below UTOP, 
+	// the parent calls duppage
+
+	for (
+
+        // Also copy the stack we are currently running on.
+        duppage(envid, ROUNDDOWN(&addr, PGSIZE));
+
+
+	// page fault handler setup to the child.
+
+	
+
+
+	sys_env_set_status(envid, ENV_RUNNABLE);
+
+	return envid;
 }
 
 // Challenge!

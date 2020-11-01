@@ -28,8 +28,8 @@ pgfault(struct UTrapframe *utf)
 	pte_t pte = vpt[PGNUM(utf->utf_fault_va)];
 	unsigned perm = pte & 0xFFF;
 
-	cprintf("pgfault  err 0x%03x, va 0x%08p, pte 0x%08x\n",
-		utf->utf_err, utf->utf_fault_va, pte);
+	cprintf("pgfault  err 0x%03x, va %08p, pte 0x%08x, perm 0x%03x, eip %08p\n",
+		utf->utf_err, utf->utf_fault_va, pte, (pte&0xFFF), utf->utf_eip);
 
 	// If a write, the second error bit is set.
 	if (!((utf->utf_err & 2) && (perm | PTE_COW))) {
@@ -47,14 +47,16 @@ pgfault(struct UTrapframe *utf)
 
 	//panic("pgfault not implemented");
 
-	if ((r = sys_page_alloc(thisenv->env_id, (void*) PFTEMP, (perm & ~PTE_COW))) < 0) {
+	int newperm = ((perm & ~PTE_COW) | PTE_W);
+
+	if ((r = sys_page_alloc(thisenv->env_id, (void*) PFTEMP, newperm)) < 0) {
 		panic("pgfault alloc");
 	}
 
-	memmove((void*) PFTEMP, (void*) utf->utf_fault_va, PGSIZE);
+	memmove((void*) PFTEMP, (void*) (utf->utf_fault_va & ~0xFFF), PGSIZE);
 
 	if ((r = sys_page_map(thisenv->env_id, (void*) PFTEMP, 
-			      thisenv->env_id, (void*) utf->utf_fault_va, perm)) < 0) {
+			      thisenv->env_id, (void*) utf->utf_fault_va, newperm)) < 0) {
 		panic("pgfault map");
 	}
 }
@@ -71,15 +73,15 @@ pgfault(struct UTrapframe *utf)
 // It is also OK to panic on error.
 //
 static int
-duppage(envid_t envid, unsigned pn)
+duppage(envid_t envid, uint32_t pn)
 {
+	cprintf("duppage  envid %08p, pn %d\n", envid, pn);
 	int r;
 
 	// LAB 4: Your code here.
 	//panic("duppage not implemented");
 
-	pte_t* uvpt = (pte_t*) UVPT;
-	pte_t pte = uvpt[pn];
+	pte_t pte = vpt[pn];
 
 	if ((pte & PTE_W) || (pte & PTE_COW)) {
 		void* va = (void*) (pn << 12);
@@ -158,21 +160,21 @@ fork(void)
 			//if (pde & PTE_W) cprintf("W");
 			//cprintf("\n");
 			for (ptx = 0; ptx < 1024; ptx++) {
-				pte_t pte = vpt[pdx*1024 + ptx];
-				if ((pte & PTE_P) && ((pte & PTE_W) || (pte & PTE_COW))) {
+				uint32_t pn = pdx*1024 + ptx;
+				pte_t pte = vpt[pn];
+				//if ((pte & PTE_P) && ((pte & PTE_W) || (pte & PTE_COW))) {
 					//cprintf("\tPTE[%03x] %08p ", ptx, pte);
 					//if (pte & PTE_U) cprintf("U");
 					//if (pte & PTE_W) cprintf("W");
 					//cprintf("\n");
-				}
+				//}
+				//cprintf("fork  pdx %d, perm 0x%03x, ptx %d, perm 0x%03x, pn %d\n", 
+					//pdx, (pde&0xFFF), ptx, (pte&0xFFF), pn);
 				if ((pte & PTE_P) != 0) {   // page mapped?
-					unsigned va = (unsigned) PGADDR(pdx,ptx,0);
-
 					// don't duplicate any pages above the user
 					// stack bottom
-					if (va < USTACKTOP-PGSIZE) {
-						unsigned pn = va>>PGSHIFT;
-						duppage(pn, envid);
+					if (pn < PGNUM(USTACKTOP-PGSIZE)) {
+						duppage(envid, pn);
 					} 
 
 				}
@@ -181,7 +183,7 @@ fork(void)
 	}
 
         // Also copy the stack we are currently running on.
-        duppage(envid, ROUNDDOWN(USTACKTOP-PGSIZE, PGSIZE));
+        duppage(envid, PGNUM(ROUNDDOWN(USTACKTOP-PGSIZE, PGSIZE)));
 
 
 	// page fault handler setup to the child.

@@ -345,7 +345,6 @@ void _pgfault_upcall(void);
 void
 page_fault_handler(struct Trapframe *tf)
 {
-	//cprintf("page_fault_handler tf_eip %p, tf_esp %p\n", tf->tf_eip, tf->tf_esp);
 	uint32_t fault_va;
 
 	// Read processor's CR2 register to find the faulting address
@@ -354,6 +353,9 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
+
+	//cprintf("page_fault_handler  envid %x, va %p, tf_eip %p, tf_esp %p\n", 
+	//	curenv->env_id, fault_va, tf->tf_eip, tf->tf_esp);
 
 	// in kernel mode, the 2 lowest bits of the faultee's CS register are 0
 	if ((tf->tf_cs & 0x3) == 0) {	
@@ -411,8 +413,8 @@ page_fault_handler(struct Trapframe *tf)
 		}
 
 	} else {
-		//cprintf("page_fault_handler stack check  curenv %d, from %p\n", 
-		//		curenv->env_id, (UXSTACKTOP - PGSIZE));
+		//cprintf("page_fault_handler stack check  curenv %x from %p\n", 
+				//curenv->env_id, (UXSTACKTOP - PGSIZE));
 
 		user_mem_assert(curenv, (void*) (UXSTACKTOP - PGSIZE), PGSIZE, PTE_W);
 

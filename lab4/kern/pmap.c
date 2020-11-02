@@ -695,6 +695,7 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 	// LAB 3: Your code here.
 
 	if (va > (void*) ULIM) {
+		cprintf("user_mem_check err  va %p, ULIM %p\n", va, ULIM);
 		return -E_FAULT;
 	}
 
@@ -702,6 +703,9 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 	for (i = (uintptr_t) va; i < (uintptr_t) va + len; i += PGSIZE) {
 		pte_t* pte = pgdir_walk(env->env_pgdir, (void*) i, 0);
 		if (pte == NULL || (perm & *pte) != perm) {
+			//cprintf("user_mem_check err  va %p, pte perm %03x, perm %03x\n", 
+			//	va, (*pte & 0xFFF), (perm & 0xFFF));
+			//if(env->env_id != 1008) panic("use_mem_check err");
 			user_mem_check_addr = i;
 			return -E_FAULT;
 		}
@@ -720,6 +724,8 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 void
 user_mem_assert(struct Env *env, const void *va, size_t len, int perm)
 {
+	//cprintf("user_mem_assert  envid %x, va %08p, len %d, perm %03x\n", 
+		//env->env_id, va, len, perm);
 	if (user_mem_check(env, va, len, perm | PTE_U) < 0) {
 		cprintf("[%08x] user_mem_check assertion failure for "
 			"va %08x\n", env->env_id, user_mem_check_addr);

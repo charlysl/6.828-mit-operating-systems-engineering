@@ -124,7 +124,7 @@ sys_env_set_status(envid_t envid, int status)
 	// LAB 4: Your code here.
 	//panic("sys_env_set_status not implemented");
 
-	cprintf("sys_env_set_status  envid %d, status %d\n", envid, status);
+	//cprintf("sys_env_set_status  envid %x, status %d\n", envid, status);
 
 	if (status != ENV_RUNNABLE && status != ENV_NOT_RUNNABLE) {
 		return E_INVAL;
@@ -202,7 +202,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	// LAB 4: Your code here.
 	//panic("sys_page_alloc not implemented");
 
-	//cprintf("sys_page_alloc  envid 0x%x, va %p, perm %d\n", envid, va, perm);
+	//cprintf("sys_page_alloc  envid 0x%x, va %p, perm 0x%03x\n", envid, va, perm);
 
 
 	struct Env* e;

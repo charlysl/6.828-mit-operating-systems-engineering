@@ -32,7 +32,9 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
 		//panic("set_pgfault_handler not implemented");
 
 		envid_t env = sys_getenvid();
-		int err = sys_page_alloc(env, (void*) (UXSTACKTOP - PGSIZE), PTE_U|PTE_W);
+		if ((r = sys_page_alloc(env, (void*) (UXSTACKTOP - PGSIZE), PTE_U|PTE_W)) < 0) {
+			panic("set_pgfault_handler alloc");
+		}
 		sys_env_set_pgfault_upcall(env, _pgfault_upcall);
 
 	}

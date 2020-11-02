@@ -7,6 +7,8 @@
 // It is one of the bits explicitly allocated to user processes (PTE_AVAIL).
 #define PTE_COW		0x800
 
+extern void _pgfault_upcall(void);
+
 //
 // Custom page fault handler - if faulting page is copy-on-write,
 // map in our own private writable copy.
@@ -28,8 +30,11 @@ pgfault(struct UTrapframe *utf)
 	pte_t pte = vpt[PGNUM(utf->utf_fault_va)];
 	unsigned perm = pte & 0xFFF;
 
-	cprintf("pgfault  err 0x%03x, va %08p, pte 0x%08x, perm 0x%03x, eip %08p\n",
-		utf->utf_err, utf->utf_fault_va, pte, (pte&0xFFF), utf->utf_eip);
+	// must not use thisenv, because initially it will still be the parent's
+	envid_t envid = sys_getenvid();
+
+	//cprintf("pgfault  envid %x, err 0x%03x, va %08p, pte 0x%08x, perm 0x%03x, eip %08p\n",
+	//	envid, utf->utf_err, utf->utf_fault_va, pte, (pte&0xFFF), utf->utf_eip);
 
 	// If a write, the second error bit is set.
 	if (!((utf->utf_err & 2) && (perm | PTE_COW))) {
@@ -49,14 +54,15 @@ pgfault(struct UTrapframe *utf)
 
 	int newperm = ((perm & ~PTE_COW) | PTE_W);
 
-	if ((r = sys_page_alloc(thisenv->env_id, (void*) PFTEMP, newperm)) < 0) {
-		panic("pgfault alloc");
+	if ((r = sys_page_alloc(envid, (void*) PFTEMP, newperm)) < 0) {
+		panic("pgfault alloc  err %d, envid %x, perm %03x, newperm %03x",
+		       r, envid, perm, newperm);
 	}
 
 	memmove((void*) PFTEMP, (void*) (utf->utf_fault_va & ~0xFFF), PGSIZE);
 
-	if ((r = sys_page_map(thisenv->env_id, (void*) PFTEMP, 
-			      thisenv->env_id, (void*) utf->utf_fault_va, newperm)) < 0) {
+	if ((r = sys_page_map(envid, (void*) PFTEMP, 
+			      envid, (void*) utf->utf_fault_va, newperm)) < 0) {
 		panic("pgfault map");
 	}
 }
@@ -75,7 +81,7 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, uint32_t pn)
 {
-	cprintf("duppage  envid %08p, pn %d\n", envid, pn);
+	//cprintf("duppage  envid %08p, pn %d\n", envid, pn);
 	int r;
 
 	// LAB 4: Your code here.
@@ -87,8 +93,8 @@ duppage(envid_t envid, uint32_t pn)
 		void* va = (void*) (pn << 12);
 		unsigned perm = (((pte & 0xFFF) | PTE_COW) & ~PTE_W);
 		int err;
-		cprintf("duppage  thisenv %08x, va %08p, envid %08x, perm %03x\n",
-			thisenv->env_id, va, envid, perm);
+		//cprintf("duppage  thisenv %08x, va %08p, envid %08x, perm %03x\n",
+			//thisenv->env_id, va, envid, perm);
 		if ((err = sys_page_map(thisenv->env_id, va, envid,   va, perm)) < 0) {
 			panic("duppage child  %d", err);
 		}
@@ -122,6 +128,8 @@ fork(void)
 	// LAB 4: Your code here.
 	//panic("fork not implemented");
 
+	int r;
+
 	set_pgfault_handler(pgfault);
 
 	envid_t envid;
@@ -129,7 +137,6 @@ fork(void)
 		panic("fork");
 	} else if (envid == 0) {
 		// in the child
-		panic("fork in child");
 
 		thisenv = &envs[ENVX(sys_getenvid())];
 		
@@ -142,6 +149,14 @@ fork(void)
 	// - In the outer loop over the page directory PTEs to check if a page table
 	//   is writable or COW.
 	// - If it is, then loop over it to look for writable or COW PTEs.
+
+	// page fault handler setup to the child.
+	if ((r = sys_env_set_pgfault_upcall(envid, _pgfault_upcall)) < 0) {
+		panic("fork pgfault upcall  envid %x, err %i", envid, r); 
+	}
+	if ((r = sys_page_alloc(envid, (void*) (UXSTACKTOP - PGSIZE), PTE_U|PTE_W)) < 0) {
+		panic("fork uxstack alloc  envid %x, err %i", envid, r);
+	}
 
 	//cprintf("uvpt %p\n", uvpt[PGNUM(0xef7bb000)]);
 	//cprintf("uvpt %p\n", *(uint32_t*)(UVPT + PDX(0x800000)*PGSIZE + PTX(0x800000)*4));
@@ -186,10 +201,9 @@ fork(void)
         duppage(envid, PGNUM(ROUNDDOWN(USTACKTOP-PGSIZE, PGSIZE)));
 
 
-	// page fault handler setup to the child.
-	sys_env_set_pgfault_upcall(envid, pgfault); 
-
-	sys_env_set_status(envid, ENV_RUNNABLE);
+	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0) {
+		panic("fork set status  envid %x, err %d", envid, r);
+	}
 
 	return envid;
 }

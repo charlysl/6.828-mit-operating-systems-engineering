@@ -2,6 +2,7 @@
 
 #include <inc/string.h>
 #include <inc/lib.h>
+#include <inc/x86.h>
 
 // PTE_COW marks copy-on-write page table entries.
 // It is one of the bits explicitly allocated to user processes (PTE_AVAIL).
@@ -140,6 +141,8 @@ fork(void)
 
 		thisenv = &envs[ENVX(sys_getenvid())];
 		
+		//cprintf("fork child  envid %x, eflags %x\n", thisenv->env_id, read_eflags());
+
 		return 0;
 	}
 

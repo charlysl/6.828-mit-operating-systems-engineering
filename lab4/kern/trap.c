@@ -270,6 +270,21 @@ trap_dispatch(struct Trapframe *tf)
 			);
 			//cprintf("trap_dispatch syscall ret\n");
 			return;
+		case IRQ_OFFSET+IRQ_TIMER:
+			//cprintf("trap_dispatch timer  %d\n", tf->tf_trapno);
+
+			// ack interrupt, otherwise there are no more timer interrupts
+			lapic_eoi(); 
+
+			sched_yield();
+			panic("trap_dispatch timer");
+		case IRQ_OFFSET+IRQ_KBD:
+		case IRQ_OFFSET+IRQ_SERIAL:
+		case IRQ_OFFSET+IRQ_SPURIOUS:
+		case IRQ_OFFSET+IRQ_IDE:
+		case IRQ_OFFSET+IRQ_ERROR:
+			cprintf("trap_dispatch irq  %d\n", tf->tf_trapno);
+			return;
 		default:
 			// Unexpected trap: The user process or the kernel has a bug.
 			print_trapframe(tf);

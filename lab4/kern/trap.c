@@ -51,6 +51,13 @@ void vector18();
 void vector19();
 void vector_SYSCALL();
 
+void vector_IRQ_TIMER();
+void vector_IRQ_KBD();
+void vector_IRQ_SERIAL();
+void vector_IRQ_SPURIOUS();
+void vector_IRQ_IDE();
+void vector_IRQ_ERROR();
+
 static const char *trapname(int trapno)
 {
 	static const char * const excnames[] = {
@@ -113,6 +120,14 @@ trap_init(void)
 	SETGATE(idt[18], 0, GD_KT, vector18, 0); 
 	SETGATE(idt[19], 0, GD_KT, vector19, 0); 
 	SETGATE(idt[T_SYSCALL], 0, GD_KT, vector_SYSCALL, 3); 
+
+	SETGATE(idt[IRQ_OFFSET+IRQ_TIMER],    0, GD_KT, vector_IRQ_TIMER,    0);
+	SETGATE(idt[IRQ_OFFSET+IRQ_KBD],      0, GD_KT, vector_IRQ_KBD,      0);
+	SETGATE(idt[IRQ_OFFSET+IRQ_SERIAL],   0, GD_KT, vector_IRQ_SERIAL,   0);
+	SETGATE(idt[IRQ_OFFSET+IRQ_SPURIOUS], 0, GD_KT, vector_IRQ_SPURIOUS, 0);
+	SETGATE(idt[IRQ_OFFSET+IRQ_IDE],      0, GD_KT, vector_IRQ_IDE,      0);
+	SETGATE(idt[IRQ_OFFSET+IRQ_ERROR],    0, GD_KT, vector_IRQ_ERROR,    0);
+
 
 	// Per-CPU setup 
 	trap_init_percpu();
